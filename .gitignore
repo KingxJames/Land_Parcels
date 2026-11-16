@@ -21,3 +21,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Local backups and downloaded OAuth credentials
+*.bak
+client_secret_*.json
