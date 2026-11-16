@@ -16,6 +16,16 @@ class User extends Authenticatable
 
     protected $hidden = ['password', 'remember_token'];
 
+    // Switching someone off signs them out everywhere
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if ($user->wasChanged('status') && $user->status === 'switched_off') {
+                $user->tokens()->delete();
+            }
+        });
+    }
+
     public function isStaff(): bool
     {
         return in_array($this->role, ['super_admin', 'office_admin']);

@@ -47,7 +47,8 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Login tokens last 30 days unless SANCTUM_EXPIRATION (minutes) says otherwise
+    'expiration' => env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------

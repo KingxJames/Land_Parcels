@@ -13,8 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
-    })
-    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->api(append: [
+            \Modules\Auth\Http\Middleware\EnsureActive::class,
+        ]);
         $middleware->alias([
             'role' => \Modules\Auth\Http\Middleware\EnsureRole::class,
         ]);

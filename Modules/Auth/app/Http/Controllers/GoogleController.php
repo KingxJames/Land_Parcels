@@ -31,6 +31,11 @@ class GoogleController extends Controller
             return redirect($front . '/login?error=google_failed');
         }
 
+        // Only trust addresses Google has confirmed belong to this person
+        if (!($g->user['email_verified'] ?? false)) {
+            return redirect($front . '/login?error=google_failed');
+        }
+
         $user = User::where('email', strtolower($g->getEmail()))->first();
 
         if (!$user) {
