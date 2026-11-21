@@ -20,6 +20,10 @@ class EnsureActive
             return response()->json(['message' => 'This account has been switched off. Please contact the office.'], 401);
         }
 
+        if ($user && ! $user->isPlatformAdmin() && $user->organization?->isSuspended()) {
+            return response()->json(['message' => 'This company’s account is suspended. Please contact support.'], 403);
+        }
+
         return $next($request);
     }
 }
