@@ -5,22 +5,27 @@ namespace Modules\Auth\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleController extends Controller
 {
-    // Step 1: send the person to Google
-    public function redirect()
+    // Step 1: send the person to Google. ?org=<slug> picks the company when one
+    // email has accounts in several; it travels through Google encrypted in "state".
+    public function redirect(Request $request)
     {
-        return Socialite::driver('google')
-            ->stateless()
-            ->with(['prompt' => 'select_account'])
-            ->redirect();
+        $driver = Socialite::driver('google')->stateless()->with(['prompt' => 'select_account']);
+
+        if ($slug = $request->query('org')) {
+            $driver->with(['prompt' => 'select_account', 'state' => Crypt::encryptString((string) $slug)]);
+        }
+
+        return $driver->redirect();
     }
 
     // Step 2: Google sends them back here
-    public function callback()
+    public function callback(Request $request)
     {
         $front = config('app.frontend_url');
 
@@ -36,20 +41,42 @@ class GoogleController extends Controller
             return redirect($front . '/login?error=google_failed');
         }
 
-        $user = User::where('email', strtolower($g->getEmail()))->first();
+        $slug = null;
+        if ($state = $request->query('state')) {
+            try {
+                $slug = Crypt::decryptString($state);
+            } catch (\Throwable) {
+                return redirect($front . '/login?error=google_failed');
+            }
+        }
 
-        if (!$user) {
+        // Email is unique within a company, so the same person may have several accounts
+        $matches = User::with('organization')
+            ->where('email', strtolower($g->getEmail()))
+            ->when($slug, fn ($q) => $q->whereHas('organization', fn ($o) => $o->where('slug', $slug)))
+            ->get();
+
+        if ($matches->isEmpty()) {
             return redirect($front . '/login?error=not_invited');
         }
+        if ($matches->count() > 1) {
+            return redirect($front . '/login?error=choose_company');
+        }
+
+        $user = $matches->first();
         if ($user->status === 'switched_off') {
             return redirect($front . '/login?error=switched_off');
+        }
+        if (! $user->isPlatformAdmin() && $user->organization?->isSuspended()) {
+            return redirect($front . '/login?error=company_suspended');
         }
 
         $user->update([
             'google_id' => $g->getId(),
             'avatar' => $g->getAvatar(),
-            'name' => $user->name ?: $g->getName(),
+            'full_name' => $user->full_name ?: $g->getName(),
             'status' => 'active',
+            'last_sign_in_at' => now(),
         ]);
 
         $token = $user->createToken('web')->plainTextToken;
@@ -60,7 +87,15 @@ class GoogleController extends Controller
     // Who is signed in (the frontend calls this after login)
     public function me(Request $request)
     {
-        return $request->user()->only(['id', 'name', 'email', 'avatar', 'role', 'status']);
+        $u = $request->user()->load('organization');
+
+        return [
+            ...$u->only(['id', 'full_name', 'email', 'phone', 'avatar', 'status', 'org_id', 'is_platform_admin', 'last_sign_in_at']),
+            'organization' => $u->organization?->only(['id', 'name', 'slug', 'currency', 'theme', 'status']),
+            // For menus: what this person may do in their company. "*" means everything (platform owner).
+            'roles' => $u->getRoleNames()->values(),
+            'permissions' => $u->isPlatformAdmin() ? ['*'] : $u->getAllPermissions()->pluck('name')->sort()->values(),
+        ];
     }
 
     // Sign out: deletes this token

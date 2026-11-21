@@ -15,6 +15,12 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+    // You, the platform owner: created by the seeder (php artisan db:seed)
+    'platform_admin' => [
+        'email' => env('PLATFORM_ADMIN_EMAIL'),
+        'name' => env('PLATFORM_ADMIN_NAME', 'Platform owner'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

@@ -43,7 +43,11 @@ class LandTrackerServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        // $this->commands([]);
+        $this->commands([
+            \Modules\LandTracker\Console\ReleaseExpiredHolds::class,
+            \Modules\LandTracker\Console\SendPaymentReminders::class,
+            \Modules\LandTracker\Console\RunBilling::class,
+        ]);
     }
 
     /**
@@ -51,10 +55,17 @@ class LandTrackerServiceProvider extends ServiceProvider
      */
     protected function registerCommandSchedules(): void
     {
-        // $this->app->booted(function () {
-        //     $schedule = $this->app->make(Schedule::class);
-        //     $schedule->command('inspire')->hourly();
-        // });
+        $this->app->booted(function () {
+            $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+            $tz = config('platform.schedule.timezone');
+
+            // Just after midnight: holds that ended yesterday go back on sale
+            $schedule->command('parcels:release-expired')->dailyAt(config('platform.schedule.release_expired_holds_at'))->timezone($tz)->withoutOverlapping();
+            // Morning, so messages don't arrive overnight
+            $schedule->command('reminders:send-due')->dailyAt(config('platform.schedule.reminders_at'))->timezone($tz)->withoutOverlapping();
+            // Daily: bills each period once, then marks late ones overdue
+            $schedule->command('billing:run')->dailyAt(config('platform.schedule.billing_at'))->timezone($tz)->withoutOverlapping();
+        });
     }
 
     /**

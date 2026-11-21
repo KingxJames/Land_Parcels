@@ -5,11 +5,12 @@ namespace Modules\Auth\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 
-class EnsureRole
+// Only you, the platform owner
+class EnsurePlatformAdmin
 {
-    public function handle(Request $request, Closure $next, string ...$roles)
+    public function handle(Request $request, Closure $next)
     {
-        if (! $request->user() || ! in_array($request->user()->role, $roles)) {
+        if (! $request->user()?->isPlatformAdmin()) {
             return response()->json(['message' => 'You don’t have access to this.'], 403);
         }
 

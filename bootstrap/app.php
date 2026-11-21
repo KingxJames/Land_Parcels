@@ -14,10 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->statefulApi();
         $middleware->api(append: [
+            \App\Http\Middleware\SetPermissionTeam::class,
             \Modules\Auth\Http\Middleware\EnsureActive::class,
         ]);
         $middleware->alias([
-            'role' => \Modules\Auth\Http\Middleware\EnsureRole::class,
+            'staff' => \Modules\Auth\Http\Middleware\EnsureStaff::class,
+            'org' => \Modules\Auth\Http\Middleware\EnsureSameOrg::class,
+            'platform' => \Modules\Auth\Http\Middleware\EnsurePlatformAdmin::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

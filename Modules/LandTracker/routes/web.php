@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\LandTracker\Http\Controllers\LandTrackerController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('landtrackers', LandTrackerController::class)->names('landtracker');
-});
+// Scaffold route left off until LandTrackerController exists; it broke route:list.
+// Route::middleware(['auth', 'verified'])->group(function () {
+//     Route::resource('landtrackers', LandTrackerController::class)->names('landtracker');
+// });
