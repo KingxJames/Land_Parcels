@@ -1,5 +1,5 @@
 {
     "Auth": true,
-    "LandTracker": false,
+    "LandTracker": true,
     "Movie": true
 }

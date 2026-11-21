@@ -16,6 +16,18 @@ return [
     'default' => env('FILESYSTEM_DISK', 'local'),
 
     /*
+    | Where the app keeps uploaded files. Both are private: the app serves the
+    | files itself after checking who may see them. Point these at any disk
+    | below (for example an "s3" disk) to move storage without code changes.
+    */
+
+    // Site plans, parcel photos, documents and company logos
+    'uploads' => env('UPLOADS_DISK', 'local'),
+
+    // Buyer ID scans (anti-money-laundering). Separate so they can go somewhere stricter.
+    'id_scans' => env('ID_SCANS_DISK', 'kyc'),
+
+    /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
@@ -29,6 +41,16 @@ return [
     */
 
     'disks' => [
+
+        // Buyer ID scans. Never public, never served directly.
+        'kyc' => [
+            'driver' => 'local',
+            'root' => storage_path('app/kyc'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
 
         'local' => [
             'driver' => 'local',
