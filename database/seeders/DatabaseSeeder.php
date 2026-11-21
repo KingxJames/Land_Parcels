@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AuthDatabaseSeeder::class,
+            PermissionSeeder::class, // after users exist
         ]);
     }
 }
